@@ -30,7 +30,11 @@ python main.py
 
 The graphs made by `main.py` and `industries.py` look like this:
 
-[placeholder]
+![total](https://github.com/user-attachments/assets/a29287b3-bea4-48b8-88aa-de7251a3ecf6)
+*Total busines survival rate over time (comes from main.py)*
+
+![industries](https://github.com/user-attachments/assets/19308090-74b3-4f89-8a54-2f2a2e00b3b5)
+*Average business survival rates over time by industries (comes from industries.py)*
 
 From the industries' graph we can make a couple of observations:
 - *information* sector consistently has the lowest survival rates;
