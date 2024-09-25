@@ -9,10 +9,14 @@ The project consists of:
 
 - **/data/**: the repository with the main data about survival rates across the industries. For more information refer to [US Bureau of Labor Statistics](https://www.bls.gov/bdm/bdmage.htm#Information).
 - `main.py`: the main script, which plots the business survival rates over time by establishment year. 
-- `industries.py`: the script that plots average business survival rates over time by industry. 
+- `industries.py`: the script that plots average business survival rates over time by industry. It also produces *averages.csv* and *processed_data.csv* for later use.
+- `stats.py`: the main script for statistical analysis. It does two jobs: does the LMM, and Likelihood Ratio Test.
 - `README.md`: this is what you are reading right now.
 - `requirements.txt`: self-explanatory.
 - `.gitignore`: self-explanatory.
+- `processed_data.csv`: this is the first dataframe saved in a form of a csv. It has all the industries and all the years.
+- `averages.csv`: here we grouped the survival rates by industries and establishment years.  
+- `stats.ipynb`: a Jupiter notebook that presents the coherent picture of the study in an organized manner.
 
 # Usage
 
@@ -40,5 +44,21 @@ From the industries' graph we can make a couple of observations:
 
 ## Methodology
 
-To check if any of the observations are statistically significant, we plan to use **ANOVA**
-testing. 
+To check if any of the observations are statistically significant, we plan to use **Mixed Effects** model with the
+following specifications:
+
+- Fixed Effects:
+  - *Time*: To capture the trends over years.
+- Random Effects:
+  - *Industry Affiliation*: To assess overall differences between industries.
+
+With this, the model can be specified as: 
+$`\text{SurvivalRate}_{it} = \beta_0 + \beta_1 \cdot \text{Time}_t + u_i + \beta_3 \cdot (\text{Time}_t \times \text{Industry}_i) + \epsilon_{it}`$
+
+Where:
+- $`/beta_0`$: Overall intercept;
+- $`/beta_1`$: Fixed effect of time;
+- $`/beta_2`$: Random effect of industry;
+- $`/beta_3`$: Interaction term between industry and time;
+- $`/epsilon_{it}`$: Residual error term.
+

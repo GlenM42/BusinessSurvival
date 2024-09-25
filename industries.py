@@ -74,8 +74,31 @@ for file_name in os.listdir(folder_path):
 # Convert the data to a pandas DataFrame
 df = pd.DataFrame(all_data, columns=columns)
 
+# This drops the unnecessary columns
+df = df.drop(columns=['Surviving_Establishments', 'Total_Employment', 'Avg_Employment'])
+
+# Let's save the df as a CSV for future use
+output_csv_path = 'processed_data.csv'  # Update the path as needed
+df.to_csv(output_csv_path, index=False)
+
+print(f"Data successfully saved to {output_csv_path}")
+
+data = pd.read_csv("processed_data.csv")
+
+data = data[data['Industry'] != 'TOTAL.txt']
+
+# Group the data by 'Industry' and 'Year_After_Establishment' and calculate the average survival rate
+grouped_data = data.groupby(['Industry', 'Year_After_Establishment']).agg(
+    Avg_Survival_Rate=('Survival_Rate_Since_Birth', 'mean')
+).reset_index()
+
+# Save the grouped data to CSV
+grouped_data.to_csv("averages.csv", index=False)
+
 # Now group by industry and years after establishment to calculate the average survival rate for each industry
 industry_avg = df.groupby(['Industry', 'Year_After_Establishment'])['Survival_Rate_Since_Birth'].mean().reset_index()
+
+industry_avg = industry_avg[industry_avg['Industry'] != 'TOTAL.txt']
 
 # Plotting the average survival rates over time for each industry
 plt.figure(figsize=(10, 6))

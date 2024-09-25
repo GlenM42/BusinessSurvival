@@ -1,0 +1,122 @@
+---
+title: "Study into potential correlation between business survival and industry affiliation"
+author: "Glen Miasnychenko"
+output: 
+  pdf_document:
+    latex_engine: lualatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part I. Introduction 
+Let's start by importing all the necessary libraries and looking at the data:
+
+```{r libs, results='hide'}
+library(lme4)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(lmtest)
+```
+
+\pagebreak
+With this out of our way, let's take a look at the data:
+```{r intro}
+# averages_data <- read_csv("PycharmProjects/bs/averages.csv")
+averages_data <- read_csv("averages.csv")
+
+head(averages_data)
+```
+We can note the following:
+
+- The industry column shows the industry affiliation;
+- The second column shows the year after establishment;
+- The last column shows the average survival rate in the industry. 
+
+That means for the last column we took the survival rate of businesses in the accommodation industry in 1994, 1995, 1996, ... up to 2023, and calculated the average of them. 
+
+The calculation part is done in the *industries.py* file. Please check it out, if needed. 
+
+\pagebreak
+# Part II. Initial exploration
+
+With that done, let's graph how those average survival rates behave some years after an establishment:
+
+```{r avg-ind-over-time}
+ggplot(averages_data, aes(x = Year_After_Establishment, y = Avg_Survival_Rate, color = Industry)) +
+  geom_line() +
+  labs(title = "Average Business Survival Rates by Industry Over Time",
+       x = "Years After Establishment",
+       y = "Average Survival Rate (%)") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(title = "Industry"))
+
+```
+This graphs shows a couple of important points:
+
+1. We can see that; in general, the graph follows 1/x function. That means we should make a transformation before applying the linear mixed model.
+2. Some industries show different survival rates: *information* sector is consistently one of the lowest, while *agriculture*, *management*, and *utilities* are the highest ones. 
+
+\pagebreak
+# Part III. Transformation
+
+Let's apply the transformation first:
+```{r}
+averages_data$log_Avg_Survival_Rate <- log(averages_data$Avg_Survival_Rate)
+
+head(averages_data)
+```
+That makes sense: e^(4.6) ~ 100 corresponds to 100% survival rate around the first year after an establishment of business. Here is how the new graph looks:
+```{r}
+ggplot(averages_data, aes(x = Year_After_Establishment, y = log_Avg_Survival_Rate, color = Industry)) +
+  geom_line() +
+  labs(title = "Log-Transformed Average Business Survival Rates by Industry Over Time",
+       x = "Years After Establishment",
+       y = "Log of Average Survival Rate") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(title = "Industry"))
+
+```
+It is much more linear than what we had before. 
+
+\pagebreak
+# Part IV. Initial Model
+
+With this we can apply the Linear Mixed Model. Our setup can be described this way.
+
+- **Fixed effect**: Time;
+- **Random effect**: Industry affiliation.
+
+Let's try this simple model:
+```{r}
+lin_mix_model <- 
+  lmer(log_Avg_Survival_Rate ~ Year_After_Establishment + ( 1 | Industry), data = averages_data)
+
+summary(lin_mix_model)
+```
+The most important part to us is the variance. Let's see how much variance does the Industry 
+random effect explain:
+```{r}
+0.03143/(0.03143 + 0.01975)
+```
+
+More than 61% of the variance can be explained with the industry variation! 
+
+\pagebreak
+# Part V. Likelihood Ratio Test
+
+To prove that it is statistically significant, let's perform a Likelihood Ratio Test:
+```{r}
+lmm_fixed_only <- lm(log_Avg_Survival_Rate ~ Year_After_Establishment, data = averages_data)
+
+# Perform the likelihood ratio test between the mixed model and the fixed model
+lr_test <- lrtest(lin_mix_model, lmm_fixed_only)
+print(lr_test)
+```
+As our p-value (2.2e-16) is significantly lower than any reasonable alpha-level, we have to reject the null,
+and say that industry-variation plays a significant role. 
+
