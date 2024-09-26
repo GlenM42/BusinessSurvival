@@ -11,8 +11,8 @@ averages_data = pd.read_csv("averages.csv")
 averages_data['log_Avg_Survival_Rate'] = np.log(averages_data['Avg_Survival_Rate'])
 
 # Fit a Linear Mixed Model with Year_After_Establishment as the fixed effect and Industry as the random effect
-lin_mix_model = smf.mixedlm(formula="log_Avg_Survival_Rate ~ Year_After_Establishment + Year_After_Establishment * "
-                                    "Industry",
+lin_mix_model = smf.mixedlm(formula="log_Avg_Survival_Rate ~ Year_After_Establishment",
+                            re_formula="~1+Year_After_Establishment",
                             data=averages_data,
                             groups=averages_data["Industry"]).fit()
 
@@ -37,7 +37,7 @@ print("Fixed effect:")
 print(lin_mix_model.params)
 
 print("Random effect:")
-print(lin_mix_model.random_effects)
+# print(lin_mix_model.random_effects)
 
 # Create a plot for the log-transformed average survival rates for each industry over time
 plt.figure(figsize=(10, 6))
@@ -54,18 +54,18 @@ plt.tight_layout()
 plt.show()
 
 # Likelihood Ratio Test to test if the random effect is significant
-
-# Fit a simpler model without the random effect (only fixed effects)
-lmm_fixed_only = smf.ols("log_Avg_Survival_Rate ~ Year_After_Establishment", data=averages_data).fit()
-
-# Calculate the likelihood ratio statistic
-lr_stat = 2 * (lin_mix_model.llf - lmm_fixed_only.llf)
-
-# Calculate the degrees of freedom (difference in the number of parameters)
-df_diff = lin_mix_model.df_modelwc - lmm_fixed_only.df_model
-
-# Perform the likelihood ratio test
-p_value = chi2.sf(lr_stat, df_diff)
-
-# Return the test statistic and p-value
-print(lr_stat, p_value)
+#
+# # Fit a simpler model without the random effect (only fixed effects)
+# lmm_fixed_only = smf.ols("log_Avg_Survival_Rate ~ Year_After_Establishment", data=averages_data).fit()
+#
+# # Calculate the likelihood ratio statistic
+# lr_stat = 2 * (lin_mix_model.llf - lmm_fixed_only.llf)
+#
+# # Calculate the degrees of freedom (difference in the number of parameters)
+# df_diff = lin_mix_model.df_modelwc - lmm_fixed_only.df_model
+#
+# # Perform the likelihood ratio test
+# p_value = chi2.sf(lr_stat, df_diff)
+#
+# # Return the test statistic and p-value
+# print(lr_stat, p_value)
