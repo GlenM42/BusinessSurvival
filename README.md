@@ -17,6 +17,8 @@ The project consists of:
 - `processed_data.csv`: this is the first dataframe saved in a form of a csv. It has all the industries and all the years.
 - `averages.csv`: here we grouped the survival rates by industries and establishment years.  
 - `stats.ipynb`: a Jupiter notebook that presents the coherent picture of the study in an organized manner.
+- `stats.r`: a R script that performs the same statistical analysis as the `stats.py`.
+- `stats.rmd`: a R markdown file that performs largely the same job as `stats.ipynb`.
 
 # Usage
 
@@ -62,9 +64,9 @@ With this, the model can be specified as:
 $`\text{SurvivalRate}_{it} = \beta_0 + \beta_1 \cdot \text{Time}_t + u_i + \beta_3 \cdot (\text{Time}_t \times \text{Industry}_i) + \epsilon_{it}`$
 
 Where:
-- $`/beta_0`$: Overall intercept;
-- $`/beta_1`$: Fixed effect of time;
-- $`/beta_2`$: Random effect of industry;
-- $`/beta_3`$: Interaction term between industry and time;
-- $`/epsilon_{it}`$: Residual error term.
+- $`beta_0`$: Overall intercept;
+- $`beta_1`$: Fixed effect of time;
+- $`beta_2`$: Random effect of industry;
+- $`beta_3`$: Interaction term between industry and time;
+- $`epsilon_{it}`$: Residual error term.
 
