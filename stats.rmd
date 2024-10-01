@@ -1,5 +1,5 @@
 ---
-title: "Study into potential correlation between business survival and industry affiliation"
+title: "Empirical Results Section"
 author: "Glen Miasnychenko"
 output: 
   pdf_document:
@@ -86,7 +86,7 @@ It is much more linear than what we had before.
 \pagebreak
 # Part IV. Initial Model
 
-With this we can apply the Linear Mixed Model. Our setup can be described this way.
+With this, we can apply the Linear Mixed Model. Our setup can be described this way.
 
 - **Fixed effect**: Time;
 - **Random effect**: Industry affiliation.
@@ -98,13 +98,13 @@ lin_mix_model <-
 
 summary(lin_mix_model)
 ```
-The most important part to us is the variance. Let's see how much variance does the Industry 
-random effect explain:
+The most important part to us is the variance:
 ```{r}
 0.03143/(0.03143 + 0.01975)
 ```
 
-More than 61% of the variance can be explained with the industry variation! 
+The industry effect can explain more than 60% of the variance left over after removing the fixed effect.
+That shows the magnitude of differences in survival rates between the groups.
 
 \pagebreak
 # Part V. Likelihood Ratio Test
@@ -120,3 +120,11 @@ print(lr_test)
 As our p-value (2.2e-16) is significantly lower than any reasonable alpha-level, we have to reject the null,
 and say that industry-variation plays a significant role. 
 
+# Part VI. Conclusion
+
+The analysis performed in this document shows there is a huge difference in the survival rates by industries.
+Analysis also proves this difference to be statistically significant.
+However, the roles of industry-specific slopes remain unexplored.
+
+Inclusion of the slope term might lead
+to statistically prove or disprove the importance of the slope of Utilities and Management sectors.

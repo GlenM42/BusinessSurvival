@@ -45,3 +45,9 @@ lmm_fixed_only <- lm(log_Avg_Survival_Rate ~ Year_After_Establishment, data = av
 library(lmtest)
 lr_test <- lrtest(lin_mix_model, lmm_fixed_only)
 print(lr_test)
+
+lin_mix_model <- lmer(log_Avg_Survival_Rate ~ Year_After_Establishment + (1 + Year_After_Establishment | Industry),
+                      data = averages_data)
+
+# Show the summary of the Linear Mixed Model
+summary(lin_mix_model)
