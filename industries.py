@@ -85,7 +85,7 @@ print(f"Data successfully saved to {output_csv_path}")
 
 data = pd.read_csv("processed_data.csv")
 
-data = data[data['Industry'] != 'TOTAL.txt']
+# data = data[data['Industry'] != 'TOTAL.txt']
 
 # Group the data by 'Industry' and 'Year_After_Establishment' and calculate the average survival rate
 grouped_data = data.groupby(['Industry', 'Year_After_Establishment']).agg(
@@ -93,7 +93,7 @@ grouped_data = data.groupby(['Industry', 'Year_After_Establishment']).agg(
 ).reset_index()
 
 # Save the grouped data to CSV
-grouped_data.to_csv("averages.csv", index=False)
+grouped_data.to_csv("averages_with_total.csv", index=False)
 
 # Now group by industry and years after establishment to calculate the average survival rate for each industry
 industry_avg = df.groupby(['Industry', 'Year_After_Establishment'])['Survival_Rate_Since_Birth'].mean().reset_index()

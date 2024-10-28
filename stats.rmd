@@ -10,7 +10,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Part I. Introduction 
+## Part I. Introduction
+
 Let's start by importing all the necessary libraries and looking at the data:
 
 ```{r libs, results='hide'}
@@ -22,24 +23,29 @@ library(lmtest)
 ```
 
 \pagebreak
+
 With this out of our way, let's take a look at the data:
+
 ```{r intro}
 # averages_data <- read_csv("PycharmProjects/bs/averages.csv")
 averages_data <- read_csv("averages.csv")
+# averages_data <- read_csv("averages_with_total.csv")
 
 head(averages_data)
 ```
+
 We can note the following:
 
-- The industry column shows the industry affiliation;
-- The second column shows the year after establishment;
-- The last column shows the average survival rate in the industry. 
+-   The industry column shows the industry affiliation;
+-   The second column shows the year after establishment;
+-   The last column shows the average survival rate in the industry.
 
-That means for the last column we took the survival rate of businesses in the accommodation industry in 1994, 1995, 1996, ... up to 2023, and calculated the average of them. 
+That means for the last column we took the survival rate of businesses in the accommodation industry in 1994, 1995, 1996, ... up to 2023, and calculated the average of them.
 
-The calculation part is done in the *industries.py* file. Please check it out, if needed. 
+The calculation part is done in the *industries.py* file. Please check it out, if needed.
 
 \pagebreak
+
 # Part II. Initial exploration
 
 With that done, let's graph how those average survival rates behave some years after an establishment:
@@ -55,22 +61,27 @@ ggplot(averages_data, aes(x = Year_After_Establishment, y = Avg_Survival_Rate, c
   guides(color = guide_legend(title = "Industry"))
 
 ```
+
 This graphs shows a couple of important points:
 
-1. We can see that; in general, the graph follows 1/x function. That means we should make a transformation before applying the linear mixed model.
-2. Some industries show different survival rates: *information* sector is consistently one of the lowest, while *agriculture*, *management*, and *utilities* are the highest ones. 
+1.  We can see that; in general, the graph follows 1/x function. That means we should make a transformation before applying the linear mixed model.
+2.  Some industries show different survival rates: *information* sector is consistently one of the lowest, while *agriculture*, *management*, and *utilities* are the highest ones.
 
 \pagebreak
+
 # Part III. Transformation
 
 Let's apply the transformation first:
-```{r}
+
+```{r showing-results}
 averages_data$log_Avg_Survival_Rate <- log(averages_data$Avg_Survival_Rate)
 
 head(averages_data)
 ```
-That makes sense: e^(4.6) ~ 100 corresponds to 100% survival rate around the first year after an establishment of business. Here is how the new graph looks:
-```{r}
+
+That makes sense: e\^(4.6) \~ 100 corresponds to 100% survival rate around the first year after an establishment of business. Here is how the new graph looks:
+
+```{r graphing-log}
 ggplot(averages_data, aes(x = Year_After_Establishment, y = log_Avg_Survival_Rate, color = Industry)) +
   geom_line() +
   labs(title = "Log-Transformed Average Business Survival Rates by Industry Over Time",
@@ -81,50 +92,214 @@ ggplot(averages_data, aes(x = Year_After_Establishment, y = log_Avg_Survival_Rat
   guides(color = guide_legend(title = "Industry"))
 
 ```
-It is much more linear than what we had before. 
+
+It is much more linear than what we had before.
 
 \pagebreak
+
 # Part IV. Initial Model
 
 With this, we can apply the Linear Mixed Model. Our setup can be described this way.
 
-- **Fixed effect**: Time;
-- **Random effect**: Industry affiliation.
+-   **Fixed effect**: Time;
+-   **Random effect**: Industry affiliation.
 
 Let's try this simple model:
-```{r}
+
+```{r initial-model}
 lin_mix_model <- 
   lmer(log_Avg_Survival_Rate ~ Year_After_Establishment + ( 1 | Industry), data = averages_data)
 
 summary(lin_mix_model)
 ```
+
 The most important part to us is the variance:
-```{r}
+
+```{r var-calculation}
 0.03143/(0.03143 + 0.01975)
 ```
 
-The industry effect can explain more than 60% of the variance left over after removing the fixed effect.
-That shows the magnitude of differences in survival rates between the groups.
+The industry effect can explain more than 60% of the variance left over after removing the fixed effect. That shows the magnitude of differences in survival rates between the groups.
 
 \pagebreak
+
 # Part V. Likelihood Ratio Test
 
 To prove that it is statistically significant, let's perform a Likelihood Ratio Test:
-```{r}
+
+```{r lrt}
 lmm_fixed_only <- lm(log_Avg_Survival_Rate ~ Year_After_Establishment, data = averages_data)
 
 # Perform the likelihood ratio test between the mixed model and the fixed model
 lr_test <- lrtest(lin_mix_model, lmm_fixed_only)
 print(lr_test)
 ```
-As our p-value (2.2e-16) is significantly lower than any reasonable alpha-level, we have to reject the null,
-and say that industry-variation plays a significant role. 
 
-# Part VI. Conclusion
+As our p-value (2.2e-16) is significantly lower than any reasonable alpha-level, we have to reject the null, and say that industry-variation plays a significant role.
 
-The analysis performed in this document shows there is a huge difference in the survival rates by industries.
-Analysis also proves this difference to be statistically significant.
-However, the roles of industry-specific slopes remain unexplored.
+# Part VI. Random Slopes exploration
 
-Inclusion of the slope term might lead
-to statistically prove or disprove the importance of the slope of Utilities and Management sectors.
+We demonstrated a significant difference in survival rates across industries, both in terms of variance explained and statistical significance. However, one limitation of our initial model is that it assumes the effect of time (i.e., years after establishment) is constant across all industries. This means we allowed each industry to have a different starting point (intercept) but assumed they all follow the same trajectory in survival rates over time. This assumption may not accurately reflect the data, as some industries may experience faster or slower declines in survival than others.
+
+To address this, we will extend our linear mixed model by allowing the slopes of time (Years After Establishment) to vary across industries. This will enable each industry to have its own trajectory for survival rates over time:
+
+```{r}
+# Updated model with random slopes for Year_After_Establishment within industries
+lin_mix_model_slopes <- lmer(log_Avg_Survival_Rate ~ Year_After_Establishment + (1 + Year_After_Establishment | Industry), 
+                             data = averages_data)
+
+# Summary of the new model
+summary(lin_mix_model_slopes)
+```
+
+The 0.65 correlation is the random effect correlation, and the 0.376 is the fixed effect correlation with the intercept.
+
+To statistically confirm that the random slopes improve the model fit, we perform a likelihood ratio test comparing the random intercepts model with the random slopes model:
+
+```{r}
+# Likelihood ratio test between the random slopes model and the random intercepts model
+lr_test_slopes <- lrtest(lin_mix_model, lin_mix_model_slopes)
+print(lr_test_slopes)
+```
+
+The likelihood ratio test shows that the inclusion of random slopes is highly significant, as indicated by a very low p-value. This suggests that allowing for industry-specific survival rate trajectories significantly improves the model. Although the variance explained by the random slopes is relatively small, it indicates that industries do not all follow the same decline in survival rates over time.
+
+# Part VII. Random Slopes in the first 10 years
+
+Next, we turn our attention to the first 10 years after a business is established. It is during these early years that survival trends may differ the most between industries. To explore this, we will focus on three industries: Utilities, Management, and Information, and compare their survival trends to the overall trend (Total).
+
+We modify the dataset to include only these industries and limit the analysis to the first 10 years after establishment.
+
+```{r}
+# Load the new dataset that includes the Total industry data
+averages_data_with_total <- read_csv("averages_with_total.csv")
+
+# Apply log transformation
+averages_data_with_total$log_Avg_Survival_Rate <- log(averages_data_with_total$Avg_Survival_Rate)
+
+# Define the pairs to compare
+industry_pairs <- list(
+  c("TOTAL.txt", "utilities_table7.txt"),
+  c("TOTAL.txt", "management.txt"),
+  c("TOTAL.txt", "information.txt"),
+  c("TOTAL.txt", "agriculture.txt")
+)
+
+# Initialize a list to store the LME results
+lme_results <- list()
+
+# Loop over the industry pairs and run LME models
+for (pair in industry_pairs) {
+  # Filter data for the current pair
+  data_filtered <- averages_data_with_total %>%
+    filter(Industry %in% pair & Year_After_Establishment <= 10)
+  
+  # Ensure there are at least two industries in the filtered data
+  if (length(unique(data_filtered$Industry)) < 2) {
+    cat("Skipping pair due to insufficient data:", paste(pair, collapse = " vs "), "\n")
+    next
+  }
+  
+  # Fit the random intercepts model
+  lme_model_intercepts <- lmer(log_Avg_Survival_Rate ~ Year_After_Establishment + 
+                                (1 | Industry), data = data_filtered)
+  
+  # Fit the random slopes model
+  lme_model_slopes <- lmer(log_Avg_Survival_Rate ~ Year_After_Establishment + 
+                            (1 + Year_After_Establishment | Industry), data = data_filtered)
+  
+  # Perform likelihood ratio test
+  lr_test <- lrtest(lme_model_intercepts, lme_model_slopes)
+  
+  # Store the result in the list
+  lme_results[[paste(pair, collapse = " vs ")]] <- list(
+    intercept_model = summary(lme_model_intercepts),
+    slope_model = summary(lme_model_slopes),
+    lr_test = lr_test
+  )
+}
+
+# Print results for each pair
+for (pair in names(lme_results)) {
+  cat("Results for:", pair, "\n")
+  print(lme_results[[pair]]$lr_test)
+  cat("\n")
+}
+```
+
+The Linear Mixed Effects models were used to assess the differences in survival trajectories between three specific industries—Utilities, Management, and Information—and the overall industry average (Total). By comparing a model with only random intercepts (differences in starting points) to one with both random intercepts and random slopes (differences in both starting points and rates of decline), we found significant differences in the slopes for each industry under the 5% confidence level.
+
+The likelihood ratio tests showed that allowing the slopes to vary between each industry and the Total significantly improved the model in all three cases. This indicates that the survival rates for Utilities, Management, and Information decline at different rates over time.
+
+While we consider the Linear Mixed Effects Models to be the superior choice for the topic exploration, we would like to confirm the results by testing with the ANCOVA:
+
+```{r}
+# Load required libraries
+library(ggplot2)
+library(gridExtra)
+
+# Initialize a list to store the ANCOVA results and plots
+ancova_results <- list()
+plots <- list()  # Store ggplot objects for later
+
+# Loop over the industry pairs and run ANCOVA models
+for (pair in industry_pairs) {
+  # Filter data for the current pair
+  data_filtered <- averages_data_with_total %>%
+    filter(Industry %in% pair & Year_After_Establishment <= 10)
+  
+  # Ensure there are at least two industries in the filtered data
+  if (length(unique(data_filtered$Industry)) < 2) {
+    cat("Skipping pair due to insufficient data:", paste(pair, collapse = " vs "), "\n")
+    next
+  }
+  
+  # Fit the ANCOVA model with interaction
+  ancova_model <- lm(log_Avg_Survival_Rate ~ Year_After_Establishment * Industry, 
+                     data = data_filtered)
+  
+  # Extract the coefficients for plotting equations
+  coefficients <- coef(ancova_model)
+  industry1_eq <- paste0(pair[1], ": y = ", round(coefficients[1], 2), 
+                         " + ", round(coefficients[2], 2), "x")
+  industry2_eq <- paste0(pair[2], ": y = ", round(coefficients[1] + coefficients[3], 2), 
+                         " + ", round(coefficients[2] + coefficients[4], 2), "x")
+  
+  # Create the ggplot object
+  p <- ggplot(data_filtered, 
+              aes(x = Year_After_Establishment, 
+                  y = log_Avg_Survival_Rate, color = Industry)) +
+    geom_point(size = 2) +
+    geom_smooth(method = "lm", se = TRUE, aes(linetype = Industry), size = 1) +
+    xlab("Years After Establishment") +
+    ylab("Log of Average Survival Rate") +
+    scale_color_manual(values = c("blue", "red", "green", "purple")) +
+    theme_classic() +
+    annotate("text", x = 0.25, y = 5.2, label = industry1_eq, color = "red", hjust = 0, size=2.5) +
+    annotate("text", x = 0.25, y = 5, label = industry2_eq, color = "blue", hjust = 0, size=2.5)
+  
+  # Store the plot
+  plots[[paste(pair, collapse = " vs ")]] <- p
+  
+  # Store the ANCOVA result
+  ancova_results[[paste(pair, collapse = " vs ")]] <- summary(ancova_model)
+}
+
+# Display the plots in a 2x2 grid using gridExtra
+do.call(grid.arrange, c(plots, ncol = 2, nrow = 2))
+
+# Print ANCOVA results for each pair
+for (pair in names(ancova_results)) {
+  cat("ANCOVA Results for:", pair, "\n")
+  print(ancova_results[[pair]])
+  cat("\n")
+}
+```
+
+The ANCOVA models were used to test for interaction effects between Year_After_Establishment (time) and Industry to determine whether the survival rate trajectories for each specific industry differed from the Total industry trend. In all comparisons, the interaction terms were statistically significant, indicating that the slopes for Utilities, Management, Agriculture, and Information were significantly different from the overall trend.
+
+These findings align with the LME models and provide further evidence that the survival rate trajectories for these industries diverge from the overall industry average.
+
+### Conclusion
+
+Both the LME models and ANCOVA analyses reveal consistent and significant differences in survival trajectories between the specific industries and the overall business average. The LME models emphasize that allowing for varying slopes across industries significantly improves model fit, confirming that each industry follows a unique survival trajectory. The ANCOVA results complement this by showing that the interaction between industry and time is significant. Together, these analyses provide robust evidence that the survival patterns of businesses vary substantially between industries, with each sector exhibiting distinct long-term survival dynamics. These findings highlight the importance of accounting for industry-specific effects when analyzing business survival trends.
